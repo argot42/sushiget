@@ -34,3 +34,6 @@
 
 #VIM
 *.swp
+
+#TEST
+test.lua
