@@ -58,7 +58,12 @@ function parse.spliturl(url)
         port = host_port[2]
     end
 
-    return protocol, host_port[1], port, request
+    return protocol, host_port[1], port, request -- protocol, host, port, path
+end
+
+function separate_http(r)
+    local s, e = r:find("%s\r\n")
+    return r:sub(0, s-1), r:sub(e+1, -1) -- header, body
 end
 
 return parse
