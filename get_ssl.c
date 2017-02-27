@@ -9,29 +9,50 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-static char* receive(BIO *bio, int chunksize) {
-    int  readbytes, count = 1;
+static void print_stringu (const char *string, size_t size) {
+    if (string) {
+        for(int i=0; i < size; i++) printf("%c", string[i]);
+        printf("\n");
+    }
+    else printf("");
+}
+
+static char* concat(const char *dest, const char *src, size_t dest_size, size_t src_size) {
+    char *new = (char *) malloc(dest_size + src_size);
+
+    if (!dest && !src) return NULL;
+
+    if (!new) return NULL;
+
+    if (!dest) for (int i=0; i < src_size; i++) new[i] = src[i];
+    else if (!src) for (int i=0; i < dest_size; i++) new[i] = dest[i];
+    else {
+        for (int i=0; i< dest_size; i++) new[i] = dest[i];
+        for (int i=dest_size, j=0; j < src_size ; i++, j++) new[i] = src[j];
+    }
+
+    return new;
+}
+
+static char* receive(BIO *bio, int chunksize, int *total_size) {
+    int bytes_read, total_bytes = 0;
     char tmp[chunksize], *buf = NULL;
 
-    buf = (char *) malloc(chunksize * sizeof(char));
-    buf[0] = '\0';
     while(1) {
-        readbytes = BIO_read(bio, tmp, chunksize - 1); 
-        if(readbytes <= 0) break;
-        tmp[readbytes] = '\0';
+        bytes_read = BIO_read(bio, tmp, chunksize);
+        if(bytes_read <= 0) break;
 
-        buf = (char *) realloc(buf, chunksize * sizeof(char) * count);
-
-        strncat(buf, tmp, strlen(tmp));
-
-        count++;
+        buf = concat(buf, tmp, total_bytes, bytes_read);
+        total_bytes += bytes_read;
     }
+
+    *total_size = total_bytes;
     return buf;
 }
 
 static int ssl_get(const char *host, const char *port, const char *request, char **response, const int datasize, const int hostsize) {
     char host_port[hostsize];
-    int host_size;
+    int host_size, total_size = 0;
 
     /* ssl */
     BIO *bio;
@@ -74,20 +95,19 @@ static int ssl_get(const char *host, const char *port, const char *request, char
     BIO_write(bio, request, strlen(request));
 
     /* read response */
-    (*response) = receive(bio, datasize);
-    
+    (*response) = receive(bio, datasize, &total_size);
 
     BIO_free_all(bio);
     SSL_CTX_free(ctx);
 
-    return 0;
+    return total_size;
 }
 
 /* lua wrapper */
 static int l_ssl_get (lua_State *L) {
     const char *host, *port, *request;
     char *response;
-    int datasize, hostsize, isnumber_datasize, isnumber_hostsize, ssl_error;
+    int datasize, hostsize, isnumber_datasize, isnumber_hostsize, total_size;
     int arguments = lua_gettop(L);
 
     /* check number of arguments */
@@ -131,15 +151,15 @@ static int l_ssl_get (lua_State *L) {
     }
 
     /* call function */
-    ssl_error = ssl_get(host, port, request, &response, datasize, hostsize);
+    total_size = ssl_get(host, port, request, &response, datasize, hostsize);
 
-    if(ssl_error == -2) {
+    if(total_size == -2) {
         lua_pushnil(L);
         lua_pushstring(L, "Error attempting to connect");
         return 2;
     }
 
-    lua_pushstring(L, response);
+    lua_pushlstring(L, response, total_size);
     return 1;
 }
 
