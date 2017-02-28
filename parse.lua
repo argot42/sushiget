@@ -36,13 +36,13 @@ function parse.spliturl(url)
         url = url:sub(e+1, -1)
     end
 
-    -- separate host from request
+    -- separate host from path
     local parts = parse.split(url, "/", 1)
 
-    -- get request
-    local request = "/"
+    -- get path
+    local path = "/"
     if(parts[2] ~= nil and parts[2] ~= '') then 
-        request = "/" .. parts[2]
+        path = "/" .. parts[2]
     end
     
 
@@ -58,12 +58,22 @@ function parse.spliturl(url)
         port = host_port[2]
     end
 
-    return protocol, host_port[1], port, request -- protocol, host, port, path
+    return protocol, host_port[1], port, path -- protocol, host, port, path
 end
 
-function separate_http(r)
+function parse.separate_http(r)
     local s, e = r:find("%s\r\n")
     return r:sub(0, s-1), r:sub(e+1, -1) -- header, body
+end
+
+function parse.convert_url(url)
+    return url:gsub("html$", "json")
+end
+
+function parse.get_img_url(url, file)
+    local board = url:match("/(%w*)/res/")
+
+    return url:gsub(string.format("/%s/res/.*$", board), string.format("/%s/src/%s", board, file))
 end
 
 return parse
