@@ -76,4 +76,28 @@ function parse.get_img_url(url, file)
     return url:gsub(string.format("/%s/res/.*$", board), string.format("/%s/src/%s", board, file))
 end
 
+function parse.filterposts(posts, new_posts)
+    local number_of_images=0
+    local filtered_posts = {}
+    local ison = false
+
+    for _,new_post in ipairs(new_posts) do
+        for _,post in ipairs(posts) do
+            if (new_post["tim"] == post["tim"]) then
+                ison = true
+                break
+            end
+        end
+
+        if (not ison) then
+            table.insert(filtered_posts, new_post)
+            number_of_images = number_of_images + 1
+        end
+
+        ison = false
+    end
+
+    return filtered_posts, number_of_images
+end
+
 return parse
