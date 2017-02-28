@@ -6,4 +6,5 @@ sushiget.lua thread_url+
 
 ### Dependencies
 cjson
+
 itamae
