@@ -100,4 +100,23 @@ function parse.filterposts(posts, new_posts)
     return filtered_posts, number_of_images
 end
 
+function parse.headerlist(header) 
+    local headerlist = {}
+    local headerlines = parse.split(header, '\n')
+
+    -- get status
+    headerlist["status"] = parse.split(headerlines[1], ' ')
+
+    -- iterate over the rest of the table and store 
+    -- the rest of the items
+    headerlines = { table.unpack(headerlines, 2) }
+
+    for _,v in ipairs(headerlines) do
+        local items = parse.split(v, ' ')
+        headerlist[items[1]:gsub(":", '')] = { table.unpack(items, 2) }
+    end
+
+    return headerlist
+end
+
 return parse

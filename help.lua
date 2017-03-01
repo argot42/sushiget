@@ -22,7 +22,12 @@ function help.getposts (url)
                                           64),
                         "HTTP request failed")
 
-    local _,body = parse.separate_http(response)    -- separate body from header
+    local header, body = parse.separate_http(response)    -- separate body from header
+
+    -- if response is not OK raise error
+    header = parse.headerlist(header)
+    if (header["status"][2] == "200") then return {}, 0 end
+
     local thread = cjson.decode(body)
 
     local posts_with_images = {}
@@ -61,10 +66,18 @@ function help.download_images (url, posts)
                                          64)
 
         if (response) then
-            local _, image = parse.separate_http(response)
-            local file = io.open(post[1] .. post[3], 'w')
-            file:write(image)
-            count = count + 1
+            local header, image = parse.separate_http(response)
+
+            header = parse.headerlist(header)
+            -- check if response is OK
+            if (header["status"][2] == "200") then
+
+                -- save file with original filename
+                local file = io.open(post[1] .. post[3], 'w')
+                file:write(image)
+                count = count + 1
+
+            end
         end
     end
 
