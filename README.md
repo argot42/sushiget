@@ -5,6 +5,8 @@ Vichan thread downloader sushigirl edition
 sushiget.lua thread_url+
 
 ### Dependencies
-cjson
+cjson (lua)
+
+openssl (c)
 
 itamae
